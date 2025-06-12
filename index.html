@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Canadian Identity in 2025</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #121212;           /* Rich dark background */
+      --text-color: #e5e5e5;         /* Soft light text for contrast */
+      --accent: #ff6b6b;             /* Vibrant coral accent */
+      --accent-soft: #ffb3b3;        /* Softer tint of accent for subtle elements */
+      --highlight: #1f1f1f;          /* Dark highlight blocks */
+    }
+
+    .light-theme {
+      --bg-color: #ffffff;           /* Clean light background */
+      --text-color: #1f1f1f;         /* Strong dark text */
+      --accent: #ff6b6b;             /* Keep accent consistent */
+      --accent-soft: #ffb3b3;        /* Light accent tint */
+      --highlight: #fbeaea;          /* Gentle highlight blocks */
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Roboto', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      padding: 2rem;
+      line-height: 1.6;
+      transition: background-color 0.4s, color 0.4s;
+    }
+
+    h1, h2 {
+      color: var(--accent);
+      font-family: 'Roboto', sans-serif;
+      font-weight: 500;
+    }
+
+    blockquote {
+      border-left: 4px solid var(--accent);
+      padding-left: 1rem;
+      color: var(--accent-soft);
+      font-style: italic;
+      background-color: var(--highlight);
+      margin: 1.5rem 0;
+      padding: 1rem;
+      border-radius: 0 4px 4px 0;
+    }
+
+    .section {
+      max-width: 900px;
+      margin: 3rem auto;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--accent-soft);
+    }
+
+    .theme-toggle {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background: var(--accent);
+      color: var(--bg-color);
+      padding: 0.6rem 1.2rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      font-family: 'Roboto', sans-serif;
+      z-index: 999;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      transition: background-color 0.3s, color 0.3s, transform 0.2s;
+    }
+
+    .theme-toggle:hover {
+      background: var(--accent-soft);
+      transform: translateY(-2px);
+    }
+
+    .tooltip {
+      position: absolute;
+      padding: 14px 16px;
+      background: var(--highlight);
+      border-radius: 8px;
+      pointer-events: none;
+      font-size: 14px;
+      font-family: 'Roboto', sans-serif;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+      color: var(--text-color);
+      border: 1px solid var(--accent-soft);
+      line-height: 1.5;
+      z-index: 10;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .tooltip strong {
+      color: var(--accent);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    #respondents-visualization {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 1rem;
+      }
+      .section {
+        margin: 2rem auto;
+      }
+    }
+
+    /* Container must have a defined height */
+    #quoteScrollerContainer {
+            height: 100vh; /* Full viewport height */
+            width: 100%;
+        }
+  </style>
+</head>
+<!-- <body class="dark-theme"> -->
+<body class="light-theme">
+
+  <button class="theme-toggle" onclick="toggleTheme()">Switch Theme</button>
+
+  <div class="section">
+    <h1>What Does It Mean to Be Canadian in 2025?</h1>
+    <p>Kris, a curious voice in the AI community, found himself staring at his screen with a question dancing in his mind: <em>"What does it mean to be Canadian in 2025?"</em> A question mark bubbled above his head.</p>
+    <p>He turned to his friend Brittney, a thoughtful problem-solver. "Why don't we ask the people?" she said, smiling. "Let's ask Canadians themselves."</p>
+    <p>Inspired, Kris shot a message to the team at Rival, a survey company. Moments later, their response flashed back: <em>"Cool, let's ask Canadians about identity."</em> And just like that, a national conversation was sparked.</p>
+    <img src="assets/data/images/page1_kb_dialogue.png" alt="Kris and Brittney's dialogue about Canadian identity" style="max-width: 100%; height: auto; margin: 2rem 0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+  
+    <p>Together, they sparked a national conversation—1,001 voices from coast to coast to coast. But whose stories are we hearing?</p>
+    <div class="flourish-embed flourish-number-ticker" data-src="visualisation/23719741"><script src="https://public.flourish.studio/resources/embed.js"></script><noscript><img src="https://public.flourish.studio/visualisation/23719741/thumbnail" width="100%" alt="number-ticker visualization" /></noscript></div>
+  </div>
+
+  <div class="section">
+    <h2>The Survey Reaches the Nation</h2>
+    <p>From coast to coast to coast, Canadians responded. Over 1,001 voices chimed in, from Nunavut to Newfoundland, from bustling cities to quiet villages.</p>
+    <p>Each dot on the map lit up as someone clicked "submit," shaping a collective response to identity.</p>
+    <blockquote>"Let's meet the 1,001 voices behind the answers."</blockquote>
+    <div class="flourish-embed flourish-map" data-src="visualisation/23697294"><script src="https://public.flourish.studio/resources/embed.js"></script><noscript><img src="https://public.flourish.studio/visualisation/23697294/thumbnail" width="100%" alt="map visualization" /></noscript></div>
+  </div>
+
+  <!-- 2. The Voices of Canada: Setting the Stage -->
+
+  <div class="section">
+    <h2>Meet the Respondents, the voices of Canada</h2>
+    <p>Across the country, we met students, parents, newcomers, elders. We built tiles—1,001 of them—each one representing a unique voice.</p>
+    <p>Not all voices echoed equally. Urban Boomers from Ontario and Quebec spoke the loudest. But every voice mattered.</p>
+    <blockquote>"We heard from 1,001 Canadians—but some voices carried farther than others."</blockquote>
+
+    <div id="respondents-visualization"></div>
+    <p>These stories aren't static—they shuffle, morph, reshape. Just like identity.</p>
+  </div>
+
+  <div class="section">
+    <h2>2. The Voices Behind the Story</h2>
+    <p>From Boomers in Toronto to Gen Z in Vancouver, newcomers in Montréal to lifelong residents of the Yukon—each voice adds a thread to Canada's tapestry. But some threads are louder than others:</p>
+    <ul>
+      <li><em>72% urban/suburban</em> | Under <em>5% remote/Northern</em></li>
+      <li><em>Boomers & Millennials dominate</em> | Gen Z and immigrants quieter</li>
+    </ul>
+    <p>This isn't just a survey—it's a mirror. Let's look closely at who's reflected, and who's missing.</p>
+  </div>
+  
+  <!-- 3. Identity Compass: What Holds Us Together? -->
+
+  <div class="section">
+    <h2>The Identity Compass</h2>
+    <p>We asked, "When you think about your identity, what feels most important?"</p>
+    <p>What anchors identity in Canada? For Gen Z, passions. For Boomers, heritage. For rural dwellers, community and land.</p>
+
+    <div id="bubble-chart" style="width: 100%; height: 700px; margin: 2rem 0;"></div>
+    <p><em>Despite our differences, shared values pulse at the center.</em></p>
+
+  </div>
+
+  <div class="section">
+    <h2>The Heart of Canadian Identity</h2>
+    <p>When asked what shapes their identity, Canadians spoke of:</p>
+    <ul>
+      <li><strong>Core values (28%)</strong> – "My principles define me"</li>
+      <li><strong>Personal passions (19%)</strong> – "I'm more than my passport"</li>
+      <li><strong>Community ties (13%)</strong> – "We look out for each other"</li>
+    </ul>
+    <p>But dig deeper, and generational cracks appear:</p>
+    <blockquote>Boomers cling to heritage and land. Gen Z champions individuality and creativity. Rural Canadians root identity in place; urbanites in work and diversity.</blockquote>
+  </div>
+
+  
+
+  <!-- 4. The Connection Paradox -->
+
+  <div class="section">
+    <h2>The Connection Paradox</h2>
+    <p>We asked Canadians: "How connected do you feel to Canadian identity?"</p>
+    <div id="connection-chart" style="width: 100%; height: 400px; margin: 2rem 0;"></div>
+  
+    <p>80.8% feel connected. But Gen Z struggles. Urban areas feel less rooted than rural towns.</p>
+    <blockquote>"In small towns, identity is lived. In cities, it's debated."</blockquote>
+    <!-- <p><em>ADD GRAPH HERE</em></p> -->
+  </div>
+
+  <div class="section">
+    <h2>4. The Connection Paradox</h2>
+    <p>80% feel connected to Canada—but peel back the layers, and contradictions emerge:</p>
+    <ul>
+      <li><strong>Rural Canadians:</strong> 56% 'very connected'</li>
+      <li><strong>Urbanites:</strong> 48%</li>
+      <li><strong>Boomers:</strong> 71% vs. <strong>Gen Z:</strong> 22%</li>
+    </ul>
+    <p>"I belong here" (Ontario) vs. "Canada doesn't see me" (Quebec critics)</p>
+    <p><em>Connection isn't just geography—it's time, trust, and sometimes, tension.</em></p>
+  </div>
+
+  <!-- 5. Why Do (or Don't) People Feel Connected? -->
+  
+  <div class="section">
+    <h2>Why Do (or Don't) People Feel Connected?</h2>
+    <p>What binds—and divides—us?</p>
+
+    <p>Belonging is powerful. The land, especially, offers connection—yet not all feel that embrace. Some cite broken promises of diversity.</p>
+    <p><em>The landscape comforts some. It alienates others.</em></p>
+
+    <blockquote>"Canada is a country of diverse people."</blockquote>
+    <blockquote>"I feel at odds with Canadian society."</blockquote>
+    <p>Warm-toned quotes radiated pride. Cool-toned quotes reflected disillusionment. Each honest. Each valid.</p>
+    <ul>
+      <li><strong>Top connectors:</strong> Belonging (35%), landscape (75%), family roots (74%)</li>
+      <li><strong>Top disconnectors:</strong> Unfulfilled diversity promises, political polarization</li>
+    </ul>
+    <blockquote>"The Rockies make me feel Canadian," said one Albertan. "But the housing crisis makes me feel invisible," countered a Torontonian.</blockquote>
+
+    
+    <div class="flourish-embed flourish-hierarchy" data-src="visualisation/23698334"><script src="https://public.flourish.studio/resources/embed.js"></script><noscript><img src="https://public.flourish.studio/visualisation/23698334/thumbnail" width="100%" alt="hierarchy visualization" /></noscript></div>
+  </div>
+  
+  
+    <!-- 6. Hopes & Fears: Canada 2030 -->
+
+  
+  <div class="section">
+    <h2>Hope vs. Fear</h2>
+    <p>We asked Canadians to dream—and worry—about the future. Their answers revealed a nation at a crossroads:</p>
+
+    <p>We dream of unity. We fear division. The youth hope for climate action. Elders seek reform.</p>
+    <p><em>Each value a cluster of hopes. Click to dive into representative voices and visions.</em></p>
+    <ul>
+      <li><strong>Hope</strong>: Equality. Progress. Reconciliation. Peace.</li>
+      <li><strong>Fear</strong>: Conflict. Division. Inequality. Collapse.</li>
+    </ul>
+    <blockquote>"A country where everyone is respected."</blockquote>
+    <blockquote>"Democratic erosion worries me the most."</blockquote>
+    
+    <p><em>Boomers demanded housing reform. Gen Z pleaded for climate action. Immigrants hoped for 'a fair chance.'</em></p>
+    <p>Yet beneath it all, a shared whisper: <strong>'Don't let us break apart.'</strong></p>
+
+    <div class="flourish-embed flourish-word-cloud" 
+         data-src="visualisation/23698937"
+         data-height="600px"
+         data-width="100%">
+         <script src="https://public.flourish.studio/resources/embed.js"></script>
+         <noscript><img src="https://public.flourish.studio/visualisation/23698937/thumbnail" width="100%" alt="word-cloud visualization" /></noscript>
+    </div>
+    <div class="flourish-embed flourish-scatter"
+     data-src="visualisation/23706063"
+     data-height="600px"
+     data-width="100%">
+     <script src="https://public.flourish.studio/resources/embed.js"></script>
+     <noscript><img src="https://public.flourish.studio/visualisation/23706063/thumbnail" width="100%" alt="scatterplot visualization" /></noscript>
+    </div>
+    <div class="flourish-embed" data-src="story/3164738"
+    data-height="600px"
+    data-width="100%">
+      <script src="https://public.flourish.studio/resources/embed.js"></script>
+      <noscript><img src="https://public.flourish.studio/story/3164738/thumbnail" width="100%" alt="visualization" /></noscript>
+    </div>
+  </div>
+  
+  
+  <div class="section">
+    <h2>A Future Surprise</h2>
+    <ul>
+      <li>Word cloud: Equity. Climate. Housing.</li>
+      <li>Scatterplot: Ideas that defy categories—big dreams.</li>
+    </ul>
+    <p>Quotes from Canadians reveal: a greener nation, fairer systems, stronger communities.</p>
+  </div>
+
+
+  
+
+  <div class="section">
+    <h2>Rewrite the Story</h2>
+    <p>"If Canada's story was being rewritten, what would the tagline say?"</p>
+    <ul>
+      <li><strong>Boomers:</strong> "Land of values and resilience"</li>
+      <li><strong>Gen Z:</strong> "Together through change"</li>
+      <li><strong>Lifelong Canadians:</strong> "Strong roots, open arms"</li>
+
+    </ul>
+
+    <p>This isn't about rewriting history—it's about <em>reclaiming our shared future.</em> One where every voice finds its place.</p>
+
+
+
+    <!-- Container for the quote scroller -->
+    <div id="quoteScrollerContainer"></div>
+
+    <!-- Required dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="quote-scroller.js"></script>
+
+    <!-- Initialize the quote scroller -->
+    <script>
+        // Create a new instance with custom options
+        const quoteScroller = new QuoteScroller('quoteScrollerContainer', {
+            quoteHeight: 50, // Height of each quote in pixels
+            scrollSpeed: 1000, // Time between quotes in milliseconds
+            csvPath: 'tagline_exploded_filtered_topics.csv', // Path to your CSV file
+            fontFamily: "'Merriweather', Georgia, serif" // Custom font family
+        });
+    </script>
+  </div>
+  
+  <div class="section">
+    <h2>Final Reflection</h2>
+    <p>As the page scrolls to an end, we return to the thought that started it all.</p>
+    <blockquote><em>"What does it mean to be Canadian in 2025?"</em></blockquote>
+    <video width="100%" controls autoplay muted loop style="margin: 2rem 0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+      <source src="your_turn.mp4" type="video/mp4">
+      <!-- Your browser does not support the video tag. -->
+    </video>
+    <p>Now we ask you: <strong>What does it mean to you?</strong></p>
+  </div>
+  
+  <script src="bubble-chart.js"></script>
+  <script src="connection_bar_chart.js"></script>
+  <script type="module" src="respondents-visualization.js"></script>
+  <script>
+    function toggleTheme() {
+      document.body.classList.toggle("light-theme");
+      // Re-render the connection chart to update text color
+      if (typeof initConnectionChart === 'function') {
+        initConnectionChart('connection-chart');
+      }
+      // Store the theme preference
+      const isLight = document.body.classList.contains("light-theme");
+      localStorage.setItem("theme", isLight ? "light" : "dark");
+    }
+
+    // Initialize the theme on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize charts if they exist
+      if (typeof initBubbleChart === 'function') {
+        initBubbleChart('bubble-chart');
+      }
+      if (typeof initConnectionChart === 'function') {
+        initConnectionChart('connection-chart');
+      }
+      
+      // Set initial theme
+      const savedTheme = localStorage.getItem("theme") || "light";
+      if (savedTheme === "light") {
+        document.body.classList.add("light-theme");
+      } else {
+        document.body.classList.remove("light-theme");
+      }
+    });
+  </script>
+
+</body>
+</html>

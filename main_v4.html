@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Canadian Identity in 2025</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    :root {
+      --bg-color: #0f0f0f;
+      --text-color: #e0e0e0;
+      --accent: #e86a1a;
+      --accent-soft: #ff944d;
+      --highlight: #ffc499;
+    }
+
+    .light-theme {
+      --bg-color: #fffaf5;
+      --text-color: #2d1e0f;
+      --accent: #e86a1a;
+      --accent-soft: #ff944d;
+      --highlight: #ffc499;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      padding: 2rem;
+      line-height: 1.6;
+      transition: background-color 0.4s, color 0.4s;
+    }
+
+    h1, h2 {
+      color: var(--accent);
+    }
+
+    blockquote {
+      border-left: 4px solid var(--accent);
+      padding-left: 1rem;
+      color: var(--highlight);
+      font-style: italic;
+    }
+
+    .section {
+      max-width: 900px;
+      margin: 3rem auto;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--accent-soft);
+    }
+
+    .theme-toggle {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background: var(--accent);
+      color: #000;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      z-index: 999;
+    }
+
+    .tooltip {
+      position: absolute;
+      padding: 12px;
+      background: var(--bg-color);
+      border-radius: 8px;
+      pointer-events: none;
+      font-size: 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      color: var(--text-color);
+      line-height: 1.5;
+      z-index: 10;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .tooltip strong {
+      color: var(--accent);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    #respondents-visualization {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 1rem;
+      }
+      .section {
+        margin: 2rem auto;
+      }
+    }
+  </style>
+</head>
+<body class="dark-theme">
+
+  <button class="theme-toggle" onclick="toggleTheme()">Switch Theme</button>
+
+  <div class="section">
+    <h1>What Does It Mean to Be Canadian in 2025?</h1>
+    <p>Kris, a curious voice in the AI community, found himself staring at his screen with a question dancing in his mind: <em>"What does it mean to be Canadian in 2025?"</em> A question mark bubbled above his head.</p>
+    <p>He turned to his friend Brittney, a thoughtful problem-solver. "Why don't we ask the people?" she said, smiling. "Let's ask Canadians themselves."</p>
+    <p>Inspired, Kris shot a message to the team at Rival, a survey company. Moments later, their response flashed back: <em>"Cool, let's ask Canadians about identity."</em> And just like that, a national conversation was sparked.</p>
+    <img src="assets/data/images/page1_kb_dialogue.png" alt="Kris and Brittney's dialogue about Canadian identity" style="max-width: 100%; height: auto; margin: 2rem 0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+  </div>
+
+  <div class="section">
+    <h2>The Survey Reaches the Nation</h2>
+    <p>From coast to coast to coast, Canadians responded. Over 1,001 voices chimed in, from Nunavut to Newfoundland, from bustling cities to quiet villages.</p>
+    <p>Each dot on the map lit up as someone clicked "submit," shaping a collective response to identity.</p>
+    <blockquote>"Let's meet the 1,001 voices behind the answers."</blockquote>
+    <div class="flourish-embed flourish-map" data-src="visualisation/23697294"><script src="https://public.flourish.studio/resources/embed.js"></script><noscript><img src="https://public.flourish.studio/visualisation/23697294/thumbnail" width="100%" alt="map visualization" /></noscript></div>
+  </div>
+
+  <div class="section">
+    <h2>Meet the Respondents</h2>
+    <p>Across the country, we met students, parents, newcomers, elders. We built tiles—1,001 of them—each one representing a unique voice.</p>
+    <div id="respondents-visualization"></div>
+    <p>These stories aren't static—they shuffle, morph, reshape. Just like identity.</p>
+  </div>
+  
+  <div class="section">
+    <h2>What Shapes Identity?</h2>
+    <p>We asked, "When you think about your identity, what feels most important?"</p>
+    <div id="bubble-chart" style="width: 100%; height: 700px; margin: 2rem 0;"></div>
+  </div>
+  
+
+  
+  <div class="section">
+    <h2>How Connected Are We?</h2>
+    <p>We asked Canadians: "How connected do you feel to Canadian identity?"</p>
+    <div id="connection-chart" style="width: 100%; height: 400px; margin: 2rem 0;"></div>
+  </div>
+  
+  <div class="section">
+    <h2>Why Do (or Don't) People Feel Connected?</h2>
+    <blockquote>"Canada is a country of diverse people."</blockquote>
+    <blockquote>"I feel at odds with Canadian society."</blockquote>
+    <p>Warm-toned quotes radiated pride. Cool-toned quotes reflected disillusionment. Each honest. Each valid.</p>
+    <div class="flourish-embed flourish-hierarchy" data-src="visualisation/23698334"><script src="https://public.flourish.studio/resources/embed.js"></script><noscript><img src="https://public.flourish.studio/visualisation/23698334/thumbnail" width="100%" alt="hierarchy visualization" /></noscript></div>
+  </div>
+  
+  <div class="section">
+    <h2>What Worries Us</h2>
+    <p>"Which divisions in Canada concern you the most?"</p>
+    <ul>
+      <li>Political divide.</li>
+      <li>Regional resource struggles.</li>
+      <li>Cultural misunderstanding.</li>
+    </ul>
+  </div>
+  
+  <div class="section">
+    <h2>Hope vs. Fear</h2>
+    <ul>
+      <li><strong>Hope</strong>: Equality. Progress. Reconciliation. Peace.</li>
+      <li><strong>Fear</strong>: Conflict. Division. Inequality. Collapse.</li>
+    </ul>
+    <blockquote>"A country where everyone is respected."</blockquote>
+    <blockquote>"Democratic erosion worries me the most."</blockquote>
+    <div class="flourish-embed flourish-word-cloud" 
+         data-src="visualisation/23698937"
+         data-height="600px"
+         data-width="100%">
+         <script src="https://public.flourish.studio/resources/embed.js"></script>
+         <noscript><img src="https://public.flourish.studio/visualisation/23698937/thumbnail" width="100%" alt="word-cloud visualization" /></noscript>
+    </div>
+  </div>
+  
+  <div class="section">
+    <h2>Visions for the Future</h2>
+    <ul>
+      <li><strong>Indigenous reconciliation</strong></li>
+      <li><strong>Environmental regeneration</strong></li>
+      <li><strong>Innovation</strong></li>
+    </ul>
+    <p>Each value a cluster of hopes. Click to dive into representative voices and visions.</p>
+  </div>
+  
+  <div class="section">
+    <h2>A Future Surprise</h2>
+    <ul>
+      <li>Word cloud: Equity. Climate. Housing.</li>
+      <li>Scatterplot: Ideas that defy categories—big dreams.</li>
+    </ul>
+    <p>Quotes from Canadians reveal: a greener nation, fairer systems, stronger communities.</p>
+  </div>
+  
+  <div class="section">
+    <h2>What Builds Unity</h2>
+    <ul>
+      <li>Dialogue. Community. Openness. Respect.</li>
+    </ul>
+    <blockquote>"Focusing on our shared humanity."</blockquote>
+  </div>
+
+  <div class="section">
+    <h2>Rewrite the Story</h2>
+    <p>"If Canada's story was being rewritten, what would the tagline say?"</p>
+    <ul>
+      <li>"Unity in Diversity" — from an open book.</li>
+      <li>Word cloud: Hope. Peace. Together. Equality.</li>
+      <li>Scatterplot: "A Canada for Everyone."</li>
+    </ul>
+  </div>
+  
+  <div class="section">
+    <h2>Final Reflection</h2>
+    <p>As the page scrolls to an end, we return to Kris, Brittney, and the thought that started it all.</p>
+    <blockquote><em>"What does it mean to be Canadian in 2025?"</em></blockquote>
+    <p>Now we ask you: What does it mean to <strong>you</strong>?</p>
+  </div>
+  
+  <script src="bubble-chart.js"></script>
+  <script src="connection_bar_chart.js"></script>
+  <script type="module" src="respondents-visualization.js"></script>
+  <script>
+    function toggleTheme() {
+      document.body.classList.toggle("light-theme");
+      // Re-render the connection chart to update text color
+      initConnectionChart('connection-chart');
+    }
+
+    // Initialize the charts when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      initBubbleChart('bubble-chart');
+      initConnectionChart('connection-chart');
+    });
+  </script>
+
+</body>
+</html>

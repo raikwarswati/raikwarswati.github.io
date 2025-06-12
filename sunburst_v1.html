@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Zoomable Sunburst Chart</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        :root {
+            --bg: #f8f9fa;
+            --fg: #2c3e50;
+            --container-bg: #fff;
+            --shadow: 0 4px 20px rgba(0,0,0,0.1);
+            --legend-bg: #fff;
+            --legend-fg: #2c3e50;
+            --tooltip-bg: rgba(255,255,255,0.95);
+            --tooltip-fg: #2c3e50;
+            --label-fg: #2c3e50;
+        }
+        body.dark {
+            --bg: #23272f;
+            --fg: #f8f9fa;
+            --container-bg: #23272f;
+            --shadow: 0 4px 20px rgba(0,0,0,0.5);
+            --legend-bg: #23272f;
+            --legend-fg: #f8f9fa;
+            --tooltip-bg: rgba(40,44,52,0.98);
+            --tooltip-fg: #f8f9fa;
+            --label-fg: #f8f9fa;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--fg);
+            transition: background 0.3s, color 0.3s;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        #theme-toggle {
+            position: absolute;
+            top: 24px;
+            right: 32px;
+            z-index: 100;
+            background: none;
+            border: none;
+            cursor: pointer;
+            outline: none;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #theme-toggle svg {
+            width: 28px;
+            height: 28px;
+            transition: fill 0.3s;
+        }
+        #chart {
+            background: var(--container-bg);
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            padding: 20px;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+        .tooltip {
+            position: absolute;
+            padding: 12px;
+            background: var(--tooltip-bg);
+            border-radius: 8px;
+            pointer-events: none;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            color: var(--tooltip-fg);
+            line-height: 1.5;
+            z-index: 10;
+            transition: background 0.3s, color 0.3s;
+        }
+        .tooltip strong {
+            color: #3498db;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .legend {
+            position: absolute;
+            top: 80px;
+            right: 32px;
+            background: var(--legend-bg);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            max-width: 300px;
+            max-height: 80vh;
+            overflow-y: auto;
+            color: var(--legend-fg);
+            transition: background 0.3s, color 0.3s;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            padding: 4px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        .legend-item:hover {
+            background-color: #f8f9fa22;
+        }
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            margin-right: 10px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .legend-text {
+            font-size: 13px;
+            color: var(--legend-fg);
+        }
+        .center-label {
+            font-size: 20px;
+            font-weight: 600;
+            text-anchor: middle;
+            fill: var(--label-fg);
+            pointer-events: none;
+            transition: fill 0.3s;
+        }
+        @media (max-width: 900px) {
+            #chart svg {
+                width: 100vw !important;
+                height: 100vw !important;
+            }
+            .legend {
+                right: 0;
+                left: 0;
+                margin: 0 auto;
+                top: unset;
+                bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button id="theme-toggle" title="Toggle dark/light mode">
+        <svg id="sun-icon" viewBox="0 0 24 24" fill="#FFD600" style="display:block;"><circle cx="12" cy="12" r="5"/><g><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></g></svg>
+        <svg id="moon-icon" viewBox="0 0 24 24" fill="#FFF8E1" style="display:none;"><path d="M21 12.79A9 9 0 0112.21 3a7 7 0 100 14 9 9 0 008.79-4.21z"/></svg>
+    </button>
+    <div class="container">
+        <div id="chart"></div>
+    </div>
+    <script>
+        // Pastel color palettes for light and dark mode
+        const pastelLight = [
+            "#A3C9E2", "#FFD6A5", "#FFB5B5", "#B5EAD7", "#C7CEEA", "#FFF1A6", "#D5A6BD", "#B5D6A7",
+            "#E2C2B9", "#E2E2E2", "#B5EAEA", "#FFD6E0", "#E2B5D6", "#C2B9E2"
+        ];
+        const pastelDark = [
+            "#5B7C99", "#BFA97A", "#B97A7A", "#7ABF99", "#8A8CBF", "#BFB97A", "#A97ABF", "#7ABF7A",
+            "#A98C7A", "#A9A9A9", "#7ABFBF", "#BFA9B9", "#BF7AA9", "#8C7ABF"
+        ];
+        let currentPalette = pastelLight;
+
+        const color = d3.scaleOrdinal()
+            .domain([
+                "Cultural and linguistic frameworks",
+                "Regional landscape and place",
+                "Work and creative contributions",
+                "Heritage and ancestral connections",
+                "Community relationships and networks",
+                "Personal passions and curiosities",
+                "Belief systems and core values",
+                "Other (open-ended)",
+                // children of Other
+                "Language & Unity",
+                "Political/Critical",
+                "Family & Relationships",
+                "Community & Values",
+                "Personal Freedoms & Role",
+                "National Pride & Critique"
+            ])
+            .range(currentPalette);
+
+        // Hierarchical data with clusters under 'Other (open-ended)'
+        const data = {
+            name: "root",
+            children: [
+                {
+                    name: "Cultural and linguistic frameworks",
+                    value: 184,
+                    percentage: 0.0675229358
+                },
+                {
+                    name: "Regional landscape and place",
+                    value: 254,
+                    percentage: 0.0932110092
+                },
+                {
+                    name: "Work and creative contributions",
+                    value: 300,
+                    percentage: 0.1100917431
+                },
+                {
+                    name: "Heritage and ancestral connections",
+                    value: 325,
+                    percentage: 0.119266055
+                },
+                {
+                    name: "Community relationships and networks",
+                    value: 348,
+                    percentage: 0.127706422
+                },
+                {
+                    name: "Personal passions and curiosities",
+                    value: 529,
+                    percentage: 0.1941284404
+                },
+                {
+                    name: "Belief systems and core values",
+                    value: 754,
+                    percentage: 0.2766972477
+                },
+                {
+                    name: "Other (open-ended)",
+                    value: 31,
+                    percentage: 0.0113761468,
+                    children: [
+                        { name: "Language & Unity", value: 1, percentage: 0.0333333333 },
+                        { name: "Political/Critical", value: 2, percentage: 0.0666666667 },
+                        { name: "Family & Relationships", value: 4, percentage: 0.1333333333 },
+                        { name: "Community & Values", value: 17, percentage: 0.5666666667 },
+                        { name: "Personal Freedoms & Role", value: 3, percentage: 0.1 },
+                        { name: "National Pride & Critique", value: 3, percentage: 0.1 }
+                    ]
+                }
+            ]
+        };
+
+        // Dimensions
+        const width = 700;
+        const height = 700;
+        const radius = Math.min(width, height) / 2;
+
+        // Create SVG
+        const svg = d3.select("#chart")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .append("g")
+            .attr("transform", `translate(${width/2},${height/2})`);
+
+        // Tooltip
+        const tooltip = d3.select("body")
+            .append("div")
+            .attr("class", "tooltip")
+            .style("opacity", 0);
+
+        // Partition layout
+        const partition = data => {
+            const root = d3.hierarchy(data)
+                .sum(d => d.value)
+                .sort((a, b) => b.value - a.value);
+            return d3.partition()
+                .size([2 * Math.PI, radius])
+                (root);
+        };
+
+        let root = partition(data);
+        root.each(d => d.current = d);
+
+        // Arc generator
+        const arc = d3.arc()
+            .startAngle(d => d.x0)
+            .endAngle(d => d.x1)
+            .innerRadius(d => d.y0)
+            .outerRadius(d => d.y1 - 2);
+
+        // Draw arcs
+        let path = svg.append("g")
+            .selectAll("path")
+            .data(root.descendants().filter(d => d.depth))
+            .join("path")
+            .attr("fill", d => color(d.data.name))
+            .attr("d", d => arc(d.current))
+            .style("cursor", d => d.children ? "pointer" : "default")
+            .on("mouseover", function(event, d) {
+                d3.select(this).attr("fill", d3.color(color(d.data.name)).darker(0.7));
+                tooltip.transition().duration(200).style("opacity", .95);
+                tooltip.html(
+                    `<strong>${d.data.name}</strong><br/>` +
+                    (d.data.value !== undefined ? `Count: ${d.data.value}<br/>` : "") +
+                    (d.data.percentage !== undefined ? `Percentage: ${(d.data.percentage * 100).toFixed(2)}%` : "")
+                )
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 28) + "px");
+            })
+            .on("mousemove", function(event) {
+                tooltip.style("left", (event.pageX + 10) + "px")
+                       .style("top", (event.pageY - 28) + "px");
+            })
+            .on("mouseout", function(event, d) {
+                d3.select(this).attr("fill", color(d.data.name));
+                tooltip.transition().duration(300).style("opacity", 0);
+            })
+            .on("click", function(event, p) {
+                if (!p.children) return;
+                focusOn(p);
+            });
+
+        // Add labels
+        let label = svg.append("g")
+            .attr("pointer-events", "none")
+            .attr("text-anchor", "middle")
+            .selectAll("text")
+            .data(root.descendants().filter(d => d.depth))
+            .join("text")
+            .attr("transform", d => labelTransform(d.current))
+            .attr("dy", "0.35em")
+            .attr("fill", "white")
+            .style("font-size", d => d.depth === 2 ? "12px" : "14px")
+            .style("font-weight", 500)
+            .style("text-shadow", "1px 1px 2px rgba(0,0,0,0.3)")
+            .text(d => d.data.name.length > 20 ? d.data.name.slice(0, 20) + '…' : d.data.name)
+            .style("opacity", d => labelVisible(d.current) ? 1 : 0);
+
+        // Add a transparent rect to catch background clicks for zoom out
+        svg.insert("rect", ":first-child")
+            .attr("x", -width/2)
+            .attr("y", -height/2)
+            .attr("width", width)
+            .attr("height", height)
+            .attr("fill", "transparent")
+            .style("cursor", "pointer")
+            .on("click", function(event) {
+                focusOn(root);
+            });
+
+        // Center label
+        const centerLabel = svg.append("text")
+            .attr("class", "center-label")
+            .attr("y", 8)
+            .text("Click a segment to zoom")
+            .style("cursor", "pointer")
+            .on("click", function() { focusOn(root); });
+
+        // Zoom/focus function
+        function focusOn(p) {
+            root.each(d => d.target = {
+                x0: Math.max(0, Math.min(1, (d.x0 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
+                x1: Math.max(0, Math.min(1, (d.x1 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
+                y0: Math.max(0, d.y0 - p.y0),
+                y1: Math.max(0, d.y1 - p.y0)
+            });
+
+            const t = svg.transition().duration(750);
+
+            path.transition(t)
+                .attrTween("d", d => () => arc(d.target));
+
+            label.transition(t)
+                .attr("transform", d => labelTransform(d.target))
+                .style("opacity", d => labelVisible(d.target) ? 1 : 0);
+
+            // Update center label
+            centerLabel.text(p.data.name === "root" ? "Click a segment to zoom" : p.data.name);
+        }
+
+        // Helper functions
+        function labelVisible(d) {
+            return d.y1 - d.y0 > 30 && d.x1 - d.x0 > 0.08;
+        }
+        function labelTransform(d) {
+            const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
+            const y = (d.y0 + d.y1) / 2;
+            return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
+        }
+
+        // Legend
+        const legendData = data.children.map(d => ({
+            name: d.name,
+            color: color(d.name)
+        })).concat(
+            data.children.find(d => d.name === "Other (open-ended)").children.map(d => ({
+                name: d.name,
+                color: color(d.name)
+            }))
+        );
+        const legend = d3.select("body")
+            .append("div")
+            .attr("class", "legend");
+        const legendItems = legend.selectAll(".legend-item")
+            .data(legendData)
+            .enter()
+            .append("div")
+            .attr("class", "legend-item");
+        legendItems.append("div")
+            .attr("class", "legend-color")
+            .style("background-color", d => d.color);
+        legendItems.append("span")
+            .attr("class", "legend-text")
+            .text(d => d.name);
+
+        // Theme toggle logic
+        const themeToggle = document.getElementById('theme-toggle');
+        const sunIcon = document.getElementById('sun-icon');
+        const moonIcon = document.getElementById('moon-icon');
+        let darkMode = false;
+        themeToggle.onclick = function() {
+            darkMode = !darkMode;
+            document.body.classList.toggle('dark', darkMode);
+            sunIcon.style.display = darkMode ? 'none' : 'block';
+            moonIcon.style.display = darkMode ? 'block' : 'none';
+            // Update color palette
+            currentPalette = darkMode ? pastelDark : pastelLight;
+            color.range(currentPalette);
+            // Update chart colors
+            path.attr("fill", d => color(d.data.name));
+            legendItems.select('.legend-color').style('background-color', d => color(d.name));
+        };
+    </script>
+</body>
+</html> 

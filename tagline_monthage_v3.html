@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Rewrite Canada Quotes</title>
+  <style>
+    body {
+      background-color: #111;
+      color: #fff;
+      font-family: 'Helvetica Neue', sans-serif;
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .container {
+      position: relative;
+      height: 100vh;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .scroll-content {
+      position: absolute;
+      width: 100%;
+      transition: transform 1s linear;
+    }
+
+    .quote {
+      width: 100%;
+      text-align: center;
+      font-size: 2em;
+      padding: 20px;
+      box-sizing: border-box;
+      transition: color 0.5s ease;
+      height: 80px; /* Fixed height for each quote */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.3; /* Default dimmed state */
+    }
+
+    /* Sentiment colors - default state (dimmed) */
+    .quote.positive {
+      color: rgba(0, 255, 0, 0.3); /* Bright green */
+    }
+
+    .quote.negative {
+      color: rgba(255, 0, 0, 0.3); /* Bright red */
+    }
+
+    .quote.neutral {
+      color: rgba(255, 140, 0, 0.3); /* Bright orange */
+    }
+
+    /* Active state - full brightness */
+    .quote.active.positive {
+      color: rgb(0, 255, 0); /* Bright green */
+      text-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+    }
+
+    .quote.active.negative {
+      color: rgb(255, 0, 0); /* Bright red */
+      text-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+    }
+
+    .quote.active.neutral {
+      color: rgb(255, 140, 0); /* Bright orange */
+      text-shadow: 0 0 10px rgba(255, 140, 0, 0.3);
+    }
+
+    /* Gradient overlays */
+    .container::before,
+    .container::after {
+      content: '';
+      position: fixed;
+      left: 0;
+      right: 0;
+      height: 150px;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .container::before {
+      top: 0;
+      background: linear-gradient(to bottom, rgba(17, 17, 17, 1) 0%, rgba(17, 17, 17, 0) 100%);
+    }
+
+    .container::after {
+      bottom: 0;
+      background: linear-gradient(to top, rgba(17, 17, 17, 1) 0%, rgba(17, 17, 17, 0) 100%);
+    }
+
+    /* Highlight zone indicator */
+    .highlight-zone {
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: 50%;
+      height: 80px;
+      transform: translateY(-50%);
+      pointer-events: none;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="highlight-zone"></div>
+    <div class="scroll-content" id="scrollContent"></div>
+  </div>
+
+  <!-- Load PapaParse -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+  <script>
+    const scrollContent = document.getElementById('scrollContent');
+    let currentTranslateY = 0;
+    let quoteHeight = 80; // Should match the height in CSS
+    let activeQuoteIndex = -1;
+    
+    function updateHighlight() {
+      const quotes = document.querySelectorAll('.quote');
+      const highlightZone = document.querySelector('.highlight-zone');
+      const highlightRect = highlightZone.getBoundingClientRect();
+      const centerY = highlightRect.top + highlightRect.height / 2;
+      
+      quotes.forEach((quote, index) => {
+        const quoteRect = quote.getBoundingClientRect();
+        const isActive = (
+          quoteRect.top <= centerY &&
+          quoteRect.bottom >= centerY
+        );
+        
+        quote.classList.toggle('active', isActive);
+        if (isActive) {
+          activeQuoteIndex = index;
+        }
+      });
+    }
+
+    function getSentimentClass(sentiment) {
+      switch(sentiment) {
+        case 'POSITIVE':
+          return 'positive';
+        case 'NEGATIVE':
+          return 'negative';
+        default:
+          return 'neutral';
+      }
+    }
+
+    function addNewQuote(text, sentiment) {
+      const quote = document.createElement('div');
+      quote.className = `quote ${getSentimentClass(sentiment)}`;
+      quote.textContent = `"${text.trim()}"`;
+      scrollContent.appendChild(quote);
+      
+      // Calculate new position
+      currentTranslateY = (window.innerHeight / 2) - ((scrollContent.children.length * quoteHeight) - (quoteHeight / 2));
+      scrollContent.style.transform = `translateY(${currentTranslateY}px)`;
+      
+      updateHighlight();
+    }
+
+    Papa.parse("tagline_exploded_filtered_topics.csv", {
+      download: true,
+      header: true,
+      complete: function(results) {
+        // Create a Map to store unique taglines and their sentiments by participant_id
+        const taglineData = new Map();
+        
+        results.data.forEach(row => {
+          if (row.Q11_tagline_text_combined) {
+            taglineData.set(row.participant_id, {
+              text: row.Q11_tagline_text_combined,
+              sentiment: row.main_sentiment_tagline
+            });
+          }
+        });
+        
+        // Convert the Map values to an array of unique taglines with their sentiments
+        const uniqueTaglines = Array.from(taglineData.values())
+          .filter(data => data.text && data.text.trim());
+        
+        let currentIndex = 0;
+        
+        function addNextQuote() {
+          if (currentIndex >= uniqueTaglines.length) {
+            currentIndex = 0; // Reset to start
+          }
+          
+          const taglineData = uniqueTaglines[currentIndex];
+          addNewQuote(taglineData.text, taglineData.sentiment);
+          currentIndex++;
+          
+          // Schedule next quote
+          setTimeout(addNextQuote, 2000);
+        }
+        
+        // Start adding quotes
+        addNextQuote();
+      },
+      error: function(error) {
+        console.error("Error parsing CSV:", error);
+        scrollContent.innerHTML = '<div class="quote neutral">Error loading quotes</div>';
+      }
+    });
+
+    // Update highlights periodically
+    setInterval(updateHighlight, 100);
+  </script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Quote Scroller Example</title>
+    <style>
+        /* Container must have a defined height */
+        #quoteScrollerContainer {
+            height: 100vh; /* Full viewport height */
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <!-- Container for the quote scroller -->
+    <div id="quoteScrollerContainer"></div>
+
+    <!-- Required dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="quote-scroller.js"></script>
+
+    <!-- Initialize the quote scroller -->
+    <script>
+        // Create a new instance with custom options
+        const quoteScroller = new QuoteScroller('quoteScrollerContainer', {
+            quoteHeight: 50, // Height of each quote in pixels
+            scrollSpeed: 1000, // Time between quotes in milliseconds
+            csvPath: 'tagline_exploded_filtered_topics.csv', // Path to your CSV file
+            fontFamily: "'Merriweather', Georgia, serif" // Custom font family
+        });
+    </script>
+</body>
+</html> 

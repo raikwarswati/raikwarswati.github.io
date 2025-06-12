@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Rewrite Canada Quotes</title>
+  <style>
+    body {
+      background-color: #111;
+      color: #fff;
+      font-family: 'Helvetica Neue', sans-serif;
+      overflow: hidden;
+      margin: 0;
+    }
+
+    .marquee {
+      position: relative;
+      height: 100vh;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .quote {
+      position: absolute;
+      width: 100%;
+      text-align: center;
+      font-size: 2em;
+      opacity: 0;
+      animation: scrollQuotes 30s linear infinite;
+      padding: 0 20px;
+    }
+
+    @keyframes scrollQuotes {
+      0%   { transform: translateY(100%); opacity: 0; }
+      10%  { opacity: 1; }
+      20%  { opacity: 1; }
+      30%  { transform: translateY(0); opacity: 0; }
+      100% { transform: translateY(-100%); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="marquee" id="quoteContainer"></div>
+
+<!-- Load PapaParse -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+<script>
+  const container = document.getElementById("quoteContainer");
+  
+  Papa.parse("tagline_exploded_filtered_topics.csv", {
+    download: true,
+    header: true,
+    complete: function(results) {
+      console.log("Parsed data:", results.data); // Debug log
+      
+      // Create a Map to store unique taglines by participant_id
+      const taglinesByParticipant = new Map();
+      
+      results.data.forEach(row => {
+        if (row.Q11_tagline_text_combined) {
+          taglinesByParticipant.set(row.participant_id, row.Q11_tagline_text_combined);
+        }
+      });
+      
+      // Convert the Map values to an array of unique taglines
+      const uniqueTaglines = Array.from(taglinesByParticipant.values());
+      console.log(`Found ${uniqueTaglines.length} unique taglines`);
+      
+      // Create and append quote elements
+      uniqueTaglines.forEach((tagline, index) => {
+        if (tagline && tagline.trim()) {
+          const div = document.createElement("div");
+          div.className = "quote";
+          div.style.animationDelay = `${index * 4}s`; // space them out
+          div.textContent = `"${tagline.trim()}"`;
+          container.appendChild(div);
+        }
+      });
+    },
+    error: function(error) {
+      console.error("Error parsing CSV:", error);
+      container.innerHTML = '<div class="quote">Error loading quotes</div>';
+    }
+  });
+</script>
+
+</body>
+</html>

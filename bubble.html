@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interactive Bubble Chart</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        :root {
+            --bg: #f8f9fa;
+            --fg: #2c3e50;
+            --container-bg: #fff;
+            --shadow: 0 4px 20px rgba(0,0,0,0.1);
+            --legend-bg: #fff;
+            --legend-fg: #2c3e50;
+            --tooltip-bg: rgba(255,255,255,0.95);
+            --tooltip-fg: #2c3e50;
+            --label-fg: #2c3e50;
+        }
+        body.dark {
+            --bg: #23272f;
+            --fg: #f8f9fa;
+            --container-bg: #23272f;
+            --shadow: 0 4px 20px rgba(0,0,0,0.5);
+            --legend-bg: #23272f;
+            --legend-fg: #f8f9fa;
+            --tooltip-bg: rgba(40,44,52,0.98);
+            --tooltip-fg: #f8f9fa;
+            --label-fg: #f8f9fa;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--fg);
+            transition: background 0.3s, color 0.3s;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        #theme-toggle {
+            position: absolute;
+            top: 24px;
+            right: 32px;
+            z-index: 100;
+            background: none;
+            border: none;
+            cursor: pointer;
+            outline: none;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #theme-toggle svg {
+            width: 28px;
+            height: 28px;
+            transition: fill 0.3s;
+        }
+        .zoom-controls {
+            position: absolute;
+            left: 32px;
+            top: 32px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .zoom-btn {
+            background: var(--container-bg);
+            color: var(--fg);
+            border: 1px solid var(--fg);
+            border-radius: 6px;
+            width: 36px;
+            height: 36px;
+            font-size: 22px;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: background 0.3s, color 0.3s;
+        }
+        .tooltip {
+            position: absolute;
+            padding: 12px;
+            background: var(--tooltip-bg);
+            border-radius: 8px;
+            pointer-events: none;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            color: var(--tooltip-fg);
+            line-height: 1.5;
+            z-index: 10;
+            transition: background 0.3s, color 0.3s;
+        }
+        .tooltip strong {
+            color: #3498db;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .legend {
+            position: absolute;
+            top: 80px;
+            right: 32px;
+            background: var(--legend-bg);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            max-width: 300px;
+            max-height: 80vh;
+            overflow-y: auto;
+            color: var(--legend-fg);
+            transition: background 0.3s, color 0.3s;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            padding: 4px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        .legend-item:hover {
+            background-color: #f8f9fa22;
+        }
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            margin-right: 10px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .legend-text {
+            font-size: 13px;
+            color: var(--legend-fg);
+        }
+        @media (max-width: 900px) {
+            #chart svg {
+                width: 100vw !important;
+                height: 100vw !important;
+            }
+            .legend {
+                right: 0;
+                left: 0;
+                margin: 0 auto;
+                top: unset;
+                bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button id="theme-toggle" title="Toggle dark/light mode">
+        <svg id="sun-icon" viewBox="0 0 24 24" fill="#FFD600" style="display:block;"><circle cx="12" cy="12" r="5"/><g><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></g></svg>
+        <svg id="moon-icon" viewBox="0 0 24 24" fill="#FFF8E1" style="display:none;"><path d="M21 12.79A9 9 0 0112.21 3a7 7 0 100 14 9 9 0 008.79-4.21z"/></svg>
+    </button>
+    <div class="zoom-controls">
+        <button class="zoom-btn" id="zoom-in">+</button>
+        <button class="zoom-btn" id="zoom-out">-</button>
+        <button class="zoom-btn" id="zoom-reset">⟳</button>
+    </div>
+    <div class="container">
+        <div id="chart"></div>
+    </div>
+    <script>
+        // Pastel color palettes for light and dark mode
+        const pastelLight = [
+            "#A3C9E2", "#FFD6A5", "#FFB5B5", "#B5EAD7", "#C7CEEA", "#FFF1A6", "#D5A6BD", "#B5D6A7",
+            "#E2C2B9", "#E2E2E2", "#B5EAEA", "#FFD6E0", "#E2B5D6", "#C2B9E2"
+        ];
+        const pastelDark = [
+            "#5B7C99", "#BFA97A", "#B97A7A", "#7ABF99", "#8A8CBF", "#BFB97A", "#A97ABF", "#7ABF7A",
+            "#A98C7A", "#A9A9A9", "#7ABFBF", "#BFA9B9", "#BF7AA9", "#8C7ABF"
+        ];
+        let currentPalette = pastelLight;
+
+        const color = d3.scaleOrdinal()
+            .domain([
+                "Cultural and linguistic frameworks",
+                "Regional landscape and place",
+                "Work and creative contributions",
+                "Heritage and ancestral connections",
+                "Community relationships and networks",
+                "Personal passions and curiosities",
+                "Belief systems and core values",
+                "Other (open-ended)",
+                "Language & Unity",
+                "Political/Critical",
+                "Family & Relationships",
+                "Community & Values",
+                "Personal Freedoms & Role",
+                "National Pride & Critique"
+            ])
+            .range(currentPalette);
+
+        // Data structure
+        const data = {
+            name: "root",
+            children: [
+                {
+                    name: "Cultural and linguistic frameworks",
+                    value: 184,
+                    percentage: 0.0675229358
+                },
+                {
+                    name: "Regional landscape and place",
+                    value: 254,
+                    percentage: 0.0932110092
+                },
+                {
+                    name: "Work and creative contributions",
+                    value: 300,
+                    percentage: 0.1100917431
+                },
+                {
+                    name: "Heritage and ancestral connections",
+                    value: 325,
+                    percentage: 0.119266055
+                },
+                {
+                    name: "Community relationships and networks",
+                    value: 348,
+                    percentage: 0.127706422
+                },
+                {
+                    name: "Personal passions and curiosities",
+                    value: 529,
+                    percentage: 0.1941284404
+                },
+                {
+                    name: "Belief systems and core values",
+                    value: 754,
+                    percentage: 0.2766972477
+                },
+                {
+                    name: "Other (open-ended)",
+                    value: 31,
+                    percentage: 0.0113761468,
+                    children: [
+                        { name: "Language & Unity", value: 1, percentage: 0.0333333333 },
+                        { name: "Political/Critical", value: 2, percentage: 0.0666666667 },
+                        { name: "Family & Relationships", value: 4, percentage: 0.1333333333 },
+                        { name: "Community & Values", value: 17, percentage: 0.5666666667 },
+                        { name: "Personal Freedoms & Role", value: 3, percentage: 0.1 },
+                        { name: "National Pride & Critique", value: 3, percentage: 0.1 }
+                    ]
+                }
+            ]
+        };
+
+        // Prepare flat data for force simulation
+        let nodes = [];
+        let otherChildren = [];
+        data.children.forEach(d => {
+            if (d.name === "Other (open-ended)" && d.children) {
+                d.children.forEach(child => {
+                    otherChildren.push({
+                        ...child,
+                        parent: d.name,
+                        group: "other"
+                    });
+                });
+            } else {
+                nodes.push({
+                    ...d,
+                    parent: "root",
+                    group: "main"
+                });
+            }
+        });
+        nodes = nodes.concat(otherChildren);
+
+        // Add a virtual node for the transparent 'Other' bubble
+        const otherBubble = {
+            name: "Other (open-ended) Group",
+            value: 60, // Make it big enough to encompass its children
+            parent: "root",
+            group: "otherParent",
+            fx: null, // Not fixed
+            fy: null
+        };
+        nodes.push(otherBubble);
+
+        // Dimensions
+        const width = 900;
+        const height = 700;
+
+        // Create SVG and group for zooming
+        const svg = d3.select("#chart")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+        const g = svg.append("g");
+
+        // Tooltip
+        const tooltip = d3.select("body")
+            .append("div")
+            .attr("class", "tooltip")
+            .style("opacity", 0);
+
+        // Radius scale
+        const r = d3.scaleSqrt()
+            .domain([0, d3.max(nodes, d => d.value)])
+            .range([20, 90]);
+
+        // Initial positions
+        nodes.forEach(d => {
+            d.x = width / 2 + (d.group === "other" ? 120 * Math.cos(Math.random() * 2 * Math.PI) : 300 * Math.cos(Math.random() * 2 * Math.PI));
+            d.y = height / 2 + (d.group === "other" ? 120 * Math.sin(Math.random() * 2 * Math.PI) : 200 * Math.sin(Math.random() * 2 * Math.PI));
+        });
+        // Place the transparent 'Other' bubble in the center right
+        otherBubble.x = width / 2 + 120;
+        otherBubble.y = height / 2;
+
+        // D3 force simulation
+        const simulation = d3.forceSimulation(nodes)
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("charge", d3.forceManyBody().strength(-80))
+            .force("collision", d3.forceCollide().radius(d => r(d.value) + 4))
+            .force("x", d3.forceX(d => d.group === "other" ? width / 2 + 120 : width / 2).strength(0.08))
+            .force("y", d3.forceY(height / 2).strength(0.08))
+            .alpha(1)
+            .alphaDecay(0.02)
+            .on("tick", ticked);
+
+        // Zoom behavior
+        const zoom = d3.zoom()
+            .scaleExtent([0.5, 3])
+            .on("zoom", (event) => {
+                g.attr("transform", event.transform);
+            });
+        svg.call(zoom);
+
+        // Zoom controls
+        d3.select("#zoom-in").on("click", () => {
+            svg.transition().call(zoom.scaleBy, 1.2);
+        });
+        d3.select("#zoom-out").on("click", () => {
+            svg.transition().call(zoom.scaleBy, 0.8);
+        });
+        d3.select("#zoom-reset").on("click", () => {
+            svg.transition().call(zoom.transform, d3.zoomIdentity);
+        });
+
+        // Draw transparent 'Other' parent bubble
+        const otherParent = g.append("circle")
+            .attr("class", "other-parent")
+            .attr("fill", "#8888ff22")
+            .attr("stroke", "#8888ff66")
+            .attr("stroke-width", 2)
+            .attr("pointer-events", "none");
+
+        // Draw bubbles
+        const node = g.selectAll("g.node")
+            .data(nodes.filter(d => d.group !== "otherParent"))
+            .enter()
+            .append("g")
+            .attr("class", "node")
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended)
+            );
+
+        node.append("circle")
+            .attr("r", d => r(d.value))
+            .attr("fill", d => color(d.name))
+            .style("opacity", d => d.group === "other" ? 0.9 : 0.85)
+            .attr("stroke", d => color(d.name))
+            .attr("stroke-width", 2)
+            .on("mouseover", function(event, d) {
+                d3.select(this)
+                    .style("opacity", 1)
+                    .attr("stroke", color(d.name))
+                    .attr("stroke-width", 2.5);
+                tooltip.transition()
+                    .duration(200)
+                    .style("opacity", .95);
+                tooltip.html(
+                    `<strong>${d.name}</strong><br/>` +
+                    `Value: ${d.value}<br/>` +
+                    (d.percentage !== undefined ? `Percentage: ${(d.percentage * 100).toFixed(2)}%<br/>` : "") +
+                    (d.parent && d.parent !== "root" ? `Category: ${d.parent}` : "")
+                )
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 28) + "px");
+            })
+            .on("mousemove", function(event) {
+                tooltip.style("left", (event.pageX + 10) + "px")
+                       .style("top", (event.pageY - 28) + "px");
+            })
+            .on("mouseout", function(event, d) {
+                d3.select(this)
+                    .style("opacity", d.group === "other" ? 0.9 : 0.85)
+                    .attr("stroke", color(d.name))
+                    .attr("stroke-width", 2);
+                tooltip.transition()
+                    .duration(300)
+                    .style("opacity", 0);
+            });
+
+        // Helper: robustly fit and wrap text inside a circle
+        function fitTextInCircle(g, text, radius) {
+            let minFontSize = 4;
+            let maxFontSize = Math.min(2 * radius / 3, 16);
+            let fontSize = maxFontSize;
+            let lines = [];
+            let fits = false;
+            let maxLines = 6;
+            let diameter = 2 * radius * 0.95;
+            while (!fits && fontSize >= minFontSize) {
+                lines = [];
+                let words = text.split(/\s+/);
+                let line = [];
+                let testLine = '';
+                // Try to wrap words into lines
+                for (let i = 0; i < words.length; i++) {
+                    testLine = (line.concat(words[i])).join(' ');
+                    // Measure width
+                    const temp = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    temp.setAttribute('font-size', fontSize);
+                    temp.textContent = testLine;
+                    document.body.appendChild(temp);
+                    const width = temp.getComputedTextLength();
+                    document.body.removeChild(temp);
+                    if (width > diameter && line.length > 0) {
+                        lines.push(line.join(' '));
+                        line = [words[i]];
+                    } else {
+                        line.push(words[i]);
+                    }
+                }
+                if (line.length) lines.push(line.join(' '));
+                // Check all lines fit in width
+                let allFit = true;
+                for (let l of lines) {
+                    const temp = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    temp.setAttribute('font-size', fontSize);
+                    temp.textContent = l;
+                    document.body.appendChild(temp);
+                    const width = temp.getComputedTextLength();
+                    document.body.removeChild(temp);
+                    if (width > diameter) {
+                        allFit = false;
+                        break;
+                    }
+                }
+                // Check total height
+                const totalHeight = lines.length * fontSize * 1.1;
+                if (allFit && totalHeight <= diameter && lines.length <= maxLines) {
+                    fits = true;
+                    break;
+                }
+                fontSize -= 1;
+            }
+            // If still doesn't fit, truncate last line
+            if (!fits) {
+                let last = lines[lines.length - 1] || '';
+                let truncated = last;
+                const temp = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                temp.setAttribute('font-size', fontSize);
+                while (truncated.length > 3) {
+                    temp.textContent = truncated + '...';
+                    document.body.appendChild(temp);
+                    const width = temp.getComputedTextLength();
+                    document.body.removeChild(temp);
+                    if (width <= diameter) break;
+                    truncated = truncated.slice(0, -1);
+                }
+                lines[lines.length - 1] = truncated + '...';
+            }
+            // Render lines
+            lines.forEach((line, i) => {
+                g.append('text')
+                    .attr('y', (i - (lines.length - 1) / 2) * fontSize * 1.1)
+                    .attr('text-anchor', 'middle')
+                    .attr('fill', 'var(--fg)')
+                    .attr('font-size', fontSize)
+                    .text(line)
+                    .style('pointer-events', 'none');
+            });
+        }
+        // Helper: get a slightly darker color
+        function darkerColor(hex, k = 0.7) {
+            const c = d3.color(hex);
+            if (!c) return hex;
+            c.r = Math.floor(c.r * k);
+            c.g = Math.floor(c.g * k);
+            c.b = Math.floor(c.b * k);
+            return c.formatHex();
+        }
+        node.selectAll('text').remove();
+        node.each(function(d) {
+            const g = d3.select(this);
+            fitTextInCircle(g, d.name, r(d.value));
+        });
+        node.select('circle')
+            .attr('stroke', d => color(d.name))
+            .attr('stroke-width', 2);
+
+        function ticked() {
+            // Update transparent 'Other' parent bubble
+            const otherKids = nodes.filter(d => d.group === "other");
+            // Center of 'Other' group
+            const cx = d3.mean(otherKids, d => d.x);
+            const cy = d3.mean(otherKids, d => d.y);
+            // Calculate required radius to contain all sub-bubbles
+            let maxDist = 0;
+            otherKids.forEach(d => {
+                const dist = Math.sqrt((d.x - cx) ** 2 + (d.y - cy) ** 2) + r(d.value);
+                if (dist > maxDist) maxDist = dist;
+            });
+            const minOtherRadius = 80;
+            const otherRadius = Math.max(r(otherBubble.value) + 20, maxDist, minOtherRadius);
+            otherParent
+                .attr('cx', cx)
+                .attr('cy', cy)
+                .attr('r', otherRadius);
+            // Constrain 'other' sub-bubbles inside the parent
+            otherKids.forEach(d => {
+                const dx = d.x - cx;
+                const dy = d.y - cy;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const limit = otherRadius - r(d.value) - 2;
+                if (dist > limit) {
+                    const angle = Math.atan2(dy, dx);
+                    d.x = cx + limit * Math.cos(angle);
+                    d.y = cy + limit * Math.sin(angle);
+                }
+            });
+            // Update bubbles
+            node.attr('transform', d => `translate(${d.x},${d.y})`);
+            // Update text to fit current radius
+            node.selectAll('text').remove();
+            node.each(function(d) {
+                const g = d3.select(this);
+                fitTextInCircle(g, d.name, r(d.value));
+            });
+        }
+
+        // Drag handlers
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.2).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+
+        // Theme toggle logic
+        const themeToggle = document.getElementById('theme-toggle');
+        const sunIcon = document.getElementById('sun-icon');
+        const moonIcon = document.getElementById('moon-icon');
+        let darkMode = false;
+        themeToggle.onclick = function() {
+            darkMode = !darkMode;
+            document.body.classList.toggle('dark', darkMode);
+            sunIcon.style.display = darkMode ? 'none' : 'block';
+            moonIcon.style.display = darkMode ? 'block' : 'none';
+            // Update color palette
+            currentPalette = darkMode ? pastelDark : pastelLight;
+            color.range(currentPalette);
+            // Update bubble colors
+            node.select("circle").attr("fill", d => color(d.name));
+        };
+
+        // Add a custom force to keep non-'Other' bubbles out of the 'Other' parent circle
+        simulation.force('otherKeepOut', function(alpha) {
+            const otherKids = nodes.filter(d => d.group === 'other');
+            const otherParentNode = nodes.find(d => d.group === 'otherParent');
+            const cx = d3.mean(otherKids, d => d.x);
+            const cy = d3.mean(otherKids, d => d.y);
+            let maxDist = 0;
+            otherKids.forEach(d => {
+                const dist = Math.sqrt((d.x - cx) ** 2 + (d.y - cy) ** 2) + r(d.value);
+                if (dist > maxDist) maxDist = dist;
+            });
+            const minOtherRadius = 80;
+            const otherRadius = Math.max(r(otherBubble.value) + 20, maxDist, minOtherRadius);
+            nodes.forEach(d => {
+                if (d.group !== 'other' && d.group !== 'otherParent') {
+                    const dx = d.x - cx;
+                    const dy = d.y - cy;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const minDist = otherRadius + r(d.value) + 2;
+                    if (dist < minDist) {
+                        // Push it out
+                        const angle = Math.atan2(dy, dx);
+                        const targetX = cx + minDist * Math.cos(angle);
+                        const targetY = cy + minDist * Math.sin(angle);
+                        d.x += (targetX - d.x) * 0.2 * alpha;
+                        d.y += (targetY - d.y) * 0.2 * alpha;
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

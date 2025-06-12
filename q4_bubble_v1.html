@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interactive Bubble Chart</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        :root {
+            --bg: #f8f9fa;
+            --fg: #2c3e50;
+            --container-bg: #fff;
+            --shadow: 0 4px 20px rgba(0,0,0,0.1);
+            --legend-bg: #fff;
+            --legend-fg: #2c3e50;
+            --tooltip-bg: rgba(255,255,255,0.95);
+            --tooltip-fg: #2c3e50;
+            --label-fg: #2c3e50;
+        }
+        body.dark {
+            --bg: #23272f;
+            --fg: #f8f9fa;
+            --container-bg: #23272f;
+            --shadow: 0 4px 20px rgba(0,0,0,0.5);
+            --legend-bg: #23272f;
+            --legend-fg: #f8f9fa;
+            --tooltip-bg: rgba(40,44,52,0.98);
+            --tooltip-fg: #f8f9fa;
+            --label-fg: #f8f9fa;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--fg);
+            transition: background 0.3s, color 0.3s;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        #theme-toggle {
+            position: absolute;
+            top: 24px;
+            right: 32px;
+            z-index: 100;
+            background: none;
+            border: none;
+            cursor: pointer;
+            outline: none;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #theme-toggle svg {
+            width: 28px;
+            height: 28px;
+            transition: fill 0.3s;
+        }
+        .tooltip {
+            position: absolute;
+            padding: 12px;
+            background: var(--tooltip-bg);
+            border-radius: 8px;
+            pointer-events: none;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            color: var(--tooltip-fg);
+            line-height: 1.5;
+            z-index: 10;
+            transition: background 0.3s, color 0.3s;
+        }
+        .tooltip strong {
+            color: #3498db;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .legend {
+            position: absolute;
+            top: 80px;
+            right: 32px;
+            background: var(--legend-bg);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            max-width: 300px;
+            max-height: 80vh;
+            overflow-y: auto;
+            color: var(--legend-fg);
+            transition: background 0.3s, color 0.3s;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            padding: 4px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        .legend-item:hover {
+            background-color: #f8f9fa22;
+        }
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            margin-right: 10px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .legend-text {
+            font-size: 13px;
+            color: var(--legend-fg);
+        }
+        @media (max-width: 900px) {
+            #chart svg {
+                width: 100vw !important;
+                height: 100vw !important;
+            }
+            .legend {
+                right: 0;
+                left: 0;
+                margin: 0 auto;
+                top: unset;
+                bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button id="theme-toggle" title="Toggle dark/light mode">
+        <svg id="sun-icon" viewBox="0 0 24 24" fill="#FFD600" style="display:block;"><circle cx="12" cy="12" r="5"/><g><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></g></svg>
+        <svg id="moon-icon" viewBox="0 0 24 24" fill="#FFF8E1" style="display:none;"><path d="M21 12.79A9 9 0 0112.21 3a7 7 0 100 14 9 9 0 008.79-4.21z"/></svg>
+    </button>
+    <div class="container">
+        <div id="chart"></div>
+    </div>
+    <script>
+        // Pastel color palettes for light and dark mode
+        const pastelLight = [
+            "#A3C9E2", "#FFD6A5", "#FFB5B5", "#B5EAD7", "#C7CEEA", "#FFF1A6", "#D5A6BD", "#B5D6A7",
+            "#E2C2B9", "#E2E2E2", "#B5EAEA", "#FFD6E0", "#E2B5D6", "#C2B9E2"
+        ];
+        const pastelDark = [
+            "#5B7C99", "#BFA97A", "#B97A7A", "#7ABF99", "#8A8CBF", "#BFB97A", "#A97ABF", "#7ABF7A",
+            "#A98C7A", "#A9A9A9", "#7ABFBF", "#BFA9B9", "#BF7AA9", "#8C7ABF"
+        ];
+        let currentPalette = pastelLight;
+
+        const color = d3.scaleOrdinal()
+            .domain([
+                "Cultural and linguistic frameworks",
+                "Regional landscape and place",
+                "Work and creative contributions",
+                "Heritage and ancestral connections",
+                "Community relationships and networks",
+                "Personal passions and curiosities",
+                "Belief systems and core values",
+                "Other (open-ended)",
+                "Language & Unity",
+                "Political/Critical",
+                "Family & Relationships",
+                "Community & Values",
+                "Personal Freedoms & Role",
+                "National Pride & Critique"
+            ])
+            .range(currentPalette);
+
+        // Data structure
+        const data = {
+            name: "root",
+            children: [
+                {
+                    name: "Cultural and linguistic frameworks",
+                    value: 184,
+                    percentage: 0.0675229358
+                },
+                {
+                    name: "Regional landscape and place",
+                    value: 254,
+                    percentage: 0.0932110092
+                },
+                {
+                    name: "Work and creative contributions",
+                    value: 300,
+                    percentage: 0.1100917431
+                },
+                {
+                    name: "Heritage and ancestral connections",
+                    value: 325,
+                    percentage: 0.119266055
+                },
+                {
+                    name: "Community relationships and networks",
+                    value: 348,
+                    percentage: 0.127706422
+                },
+                {
+                    name: "Personal passions and curiosities",
+                    value: 529,
+                    percentage: 0.1941284404
+                },
+                {
+                    name: "Belief systems and core values",
+                    value: 754,
+                    percentage: 0.2766972477
+                },
+                {
+                    name: "Other (open-ended)",
+                    value: 31,
+                    percentage: 0.0113761468,
+                    children: [
+                        { name: "Language & Unity", value: 1, percentage: 0.0333333333 },
+                        { name: "Political/Critical", value: 2, percentage: 0.0666666667 },
+                        { name: "Family & Relationships", value: 4, percentage: 0.1333333333 },
+                        { name: "Community & Values", value: 17, percentage: 0.5666666667 },
+                        { name: "Personal Freedoms & Role", value: 3, percentage: 0.1 },
+                        { name: "National Pride & Critique", value: 3, percentage: 0.1 }
+                    ]
+                }
+            ]
+        };
+
+        // Dimensions
+        const width = 800;
+        const height = 700;
+
+        // Create SVG
+        const svg = d3.select("#chart")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .append("g")
+            .attr("transform", `translate(${width / 2},${height / 2})`);
+
+        // Tooltip
+        const tooltip = d3.select("body")
+            .append("div")
+            .attr("class", "tooltip")
+            .style("opacity", 0);
+
+        // Create a hierarchy and pack layout
+        const root = d3.hierarchy(data)
+            .sum(d => d.value)
+            .sort((a, b) => b.value - a.value);
+
+        const pack = d3.pack()
+            .size([width - 40, height - 40])
+            .padding(8);
+
+        pack(root);
+
+        // Only show leaf nodes (actual categories and subcategories)
+        const nodes = root.leaves();
+
+        // Draw bubbles
+        const node = svg.selectAll("g.node")
+            .data(nodes)
+            .enter()
+            .append("g")
+            .attr("class", "node")
+            .attr("transform", d => `translate(${d.x - width / 2 + 20},${d.y - height / 2 + 20})`);
+
+        node.append("circle")
+            .attr("r", d => d.r)
+            .attr("fill", d => color(d.data.name))
+            .style("opacity", 0.8)
+            .on("mouseover", function(event, d) {
+                d3.select(this)
+                    .style("opacity", 1)
+                    .attr("stroke", "#000")
+                    .attr("stroke-width", 2);
+                tooltip.transition()
+                    .duration(200)
+                    .style("opacity", .95);
+                tooltip.html(
+                    `<strong>${d.data.name}</strong><br/>` +
+                    `Value: ${d.data.value}<br/>` +
+                    (d.data.percentage !== undefined ? `Percentage: ${(d.data.percentage * 100).toFixed(2)}%<br/>` : "") +
+                    (d.parent && d.parent.data && d.parent.data.name !== "root" ? `Category: ${d.parent.data.name}` : "")
+                )
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 28) + "px");
+            })
+            .on("mousemove", function(event) {
+                tooltip.style("left", (event.pageX + 10) + "px")
+                       .style("top", (event.pageY - 28) + "px");
+            })
+            .on("mouseout", function() {
+                d3.select(this)
+                    .style("opacity", 0.8)
+                    .attr("stroke", "none");
+                tooltip.transition()
+                    .duration(300)
+                    .style("opacity", 0);
+            });
+
+        // Add labels to bubbles
+        node.append("text")
+            .attr("dy", ".3em")
+            .style("text-anchor", "middle")
+            .style("fill", "var(--fg)")
+            .style("font-size", d => Math.min(2 * d.r / 3, 16) + "px")
+            .text(d => d.data.name.length > 15 ? d.data.name.slice(0, 15) + "..." : d.data.name)
+            .style("pointer-events", "none");
+
+        // Theme toggle logic
+        const themeToggle = document.getElementById('theme-toggle');
+        const sunIcon = document.getElementById('sun-icon');
+        const moonIcon = document.getElementById('moon-icon');
+        let darkMode = false;
+        themeToggle.onclick = function() {
+            darkMode = !darkMode;
+            document.body.classList.toggle('dark', darkMode);
+            sunIcon.style.display = darkMode ? 'none' : 'block';
+            moonIcon.style.display = darkMode ? 'block' : 'none';
+            // Update color palette
+            currentPalette = darkMode ? pastelDark : pastelLight;
+            color.range(currentPalette);
+            // Update bubble colors
+            node.select("circle").attr("fill", d => color(d.data.name));
+        };
+    </script>
+</body>
+</html> 
